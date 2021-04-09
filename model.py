@@ -24,7 +24,7 @@ class VGAE(nn.Module):
 	def forward(self, X):
 		Z = self.encode(X)
 		A_pred = dot_product_decode(Z)
-		return A_pred
+		return A_pred, Z
 
 class GraphConvSparse(nn.Module):
 	def __init__(self, input_dim, output_dim, adj, activation = F.relu, **kwargs):
@@ -65,7 +65,7 @@ class GAE(nn.Module):
 	def forward(self, X):
 		Z = self.encode(X)
 		A_pred = dot_product_decode(Z)
-		return A_pred
+		return A_pred, Z
 		
 
 # class GraphConv(nn.Module):

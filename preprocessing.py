@@ -7,6 +7,52 @@ Their preprocessing source was used as-is.
 '''
 import numpy as np
 import scipy.sparse as sp
+from sklearn.feature_extraction.text import CountVectorizer
+
+
+# Delete data which has no cpc_set
+def delete_null(table):
+    print('Initial length of the raw data is', table.shape[0])
+    table_ = table.copy()
+    for i in range(table_.shape[0]):
+        if table_['cpc_set'][i] == 'None':
+            table_.drop(i, inplace=True)
+    
+    print('Final length of the data is', table_.shape[0])
+    return table_
+
+
+# Split data into train and test
+def split_train_test(table):
+    table_ = delete_null(table)
+    train_range = [str(i) for i in range(2015, 2020)]
+    tr_df = table_.loc[table['patent_date'].apply(lambda x: x.split('-')[0]).isin(train_range)]
+    ts_df = table_.loc[table['patent_date'].apply(lambda x: x.split('-')[0]) == '2020']
+    
+    return tr_df, ts_df
+
+
+# cpc_set to symmetric adjacency matrix with train and test each.
+def create_adj(table):
+    """
+    A hat = D tilde to the power of -1/2 * A tilde * D tilde to the power of -1/2
+    A hat is a symmetric adjacency matrix for GCN layers.
+    """
+    # A tilde : Initial adjacency matrix
+    cpcs = [' '.join(i.split(',')[1:]) for i in table['cpc_set']]
+    vectorizer = CountVectorizer()
+    mode_2 = vectorizer.fit_transform(cpcs)
+    cpc_order = vectorizer.get_feature_names()
+    cpc_order = [i.upper() for i in cpc_order]
+    mode_2 = sp.csr_matrix(mode_2.toarray())
+    adj = mode_2.T.dot(mode_2).toarray()
+    for e1, i in enumerate(adj):
+        for e2, j in enumerate(i):
+            if j != 0:
+                adj[e1][e2] = 1
+
+    return sp.csr_matrix(adj), cpc_order    
+
 
 def sparse_to_tuple(sparse_mx):
     if not sp.isspmatrix_coo(sparse_mx):
@@ -90,11 +136,11 @@ def mask_test_edges(adj):
                 continue
         val_edges_false.append([idx_i, idx_j])
 
-    assert ~ismember(test_edges_false, edges_all)
-    assert ~ismember(val_edges_false, edges_all)
-    assert ~ismember(val_edges, train_edges)
-    assert ~ismember(test_edges, train_edges)
-    assert ~ismember(val_edges, test_edges)
+    # assert ~ismember(test_edges_false, edges_all)
+    # assert ~ismember(val_edges_false, edges_all)
+    # assert ~ismember(val_edges, train_edges)
+    # assert ~ismember(test_edges, train_edges)
+    # assert ~ismember(val_edges, test_edges)
 
     data = np.ones(train_edges.shape[0])
 

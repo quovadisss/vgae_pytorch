@@ -1,8 +1,8 @@
 ### CONFIGS ###
 dataset = 'cora'
-model = 'GAE'
+model = 'VGAE'
 
-input_dim = 1433 
+input_dim = 104 
 hidden1_dim = 32
 hidden2_dim = 16
 use_feature = True

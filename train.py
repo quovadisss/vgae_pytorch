@@ -4,8 +4,11 @@ from torch.optim import Adam
 from sklearn.metrics import roc_auc_score, average_precision_score
 import scipy.sparse as sp
 import numpy as np
+import pandas as pd
 import os
 import time
+import pickle
+import networkx as nx
 
 from input_data import load_data
 from preprocessing import *
@@ -15,7 +18,22 @@ import model
 # Train on CPU (hide GPU) due to memory constraints
 os.environ['CUDA_VISIBLE_DEVICES'] = ""
 
-adj, features = load_data(args.dataset)
+
+# Load data
+df = pd.read_csv('data/patent.csv').iloc[:, 1:]
+
+# Split data into train and test
+tr_df, ts_df = split_train_test(df)
+
+# Create symmetric adjacency matrix
+adj, tr_cpc_order = create_adj(tr_df)
+G = nx.Graph(adj)
+adj = nx.adjacency_matrix(G)
+
+# Load features
+with open('data/features.pkl', 'rb') as fr:
+    features = pickle.load(fr)
+features = sp.csr_matrix(features).tolil()
 
 # Store original adjacency matrix (without diagonal entries) for later
 adj_orig = adj
@@ -102,7 +120,7 @@ def get_acc(adj_rec, adj_label):
 for epoch in range(args.num_epoch):
     t = time.time()
 
-    A_pred = model(features)
+    A_pred, Z = model(features)
     optimizer.zero_grad()
     loss = log_lik = norm*F.binary_cross_entropy(A_pred.view(-1), adj_label.to_dense().view(-1), weight = weight_tensor)
     if args.model == 'VGAE':
@@ -122,5 +140,7 @@ for epoch in range(args.num_epoch):
 
 
 test_roc, test_ap = get_scores(test_edges, test_edges_false, A_pred)
+with open('data/vgae_z.pkl', 'wb') as fw:
+    pickle.dump(Z.detach().numpy(), fw)
 print("End of training!", "test_roc=", "{:.5f}".format(test_roc),
       "test_ap=", "{:.5f}".format(test_ap))
