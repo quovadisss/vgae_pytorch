@@ -140,7 +140,49 @@ for epoch in range(args.num_epoch):
 
 
 test_roc, test_ap = get_scores(test_edges, test_edges_false, A_pred)
-with open('data/vgae_z.pkl', 'wb') as fw:
-    pickle.dump(Z.detach().numpy(), fw)
 print("End of training!", "test_roc=", "{:.5f}".format(test_roc),
       "test_ap=", "{:.5f}".format(test_ap))
+
+
+# Create node pairs representation
+# Load adj, train/valid network information
+with open('data/tr_val_info.pkl', 'rb') as fr:
+    tr_val_info = pickle.load(fr)
+
+tr_links = tr_val_info[1]
+val_links = tr_val_info[2]
+
+# Create sparse tensors for link features
+traina_indices, traina_values, trainb_indices, trainb_values = make_ind_val(tr_links)
+vala_indices, vala_values, valb_indices, valb_values = make_ind_val(val_links)
+
+tra = sparse_tensors(traina_indices, traina_values, len(tr_links), adj.shape[0])
+trb = sparse_tensors(trainb_indices, trainb_values, len(tr_links), adj.shape[0])
+vala = sparse_tensors(vala_indices, vala_values, len(val_links), adj.shape[0])
+valb = sparse_tensors(valb_indices, valb_values, len(val_links), adj.shape[0])
+
+
+def node2edge(node_a, node_b, output, length, dataset):
+    def save_operator(array):
+        with open('data/Z_{0}_{1}.pkl'.format(args.edge_operator,
+                                                   dataset), 'wb') as fw:
+            pickle.dump(array, fw)
+
+    mul_a = torch.matmul(node_a, output)
+    mul_b = torch.matmul(node_b, output)
+
+    if args.edge_operator == 'cosine':
+        sig = m(cosine(mul_a, mul_b).reshape(length, 1))
+        save_operator(sig.detach().numpy())
+    elif args.edge_operator == 'hadamard':
+        save_operator((mul_a * mul_b).detach().numpy())
+    elif args.edge_operator == 'average':
+        save_operator(((mul_a + mul_b) / 2).detach().numpy())
+    elif args.edge_operator == 'weighted-l1':
+        save_operator((torch.abs(mul_a - mul_b)).detach().numpy())
+    elif args.edge_operator == 'weighted-l2':
+        save_operator((torch.square(mul_a - mul_b)).detach().numpy())
+
+
+node2edge(tra, trb, Z, len(tr_links), 'tr')
+node2edge(vala, valb, Z, len(val_links), 'val')

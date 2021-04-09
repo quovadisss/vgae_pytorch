@@ -5,6 +5,7 @@ since datasets are the same as those in kipf's implementation,
 Their preprocessing source was used as-is.
 *************************************
 '''
+import torch
 import numpy as np
 import scipy.sparse as sp
 from sklearn.feature_extraction.text import CountVectorizer
@@ -150,3 +151,23 @@ def mask_test_edges(adj):
 
     # NOTE: these edge lists only contain single direction of edge!
     return adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false
+
+
+def make_ind_val(links):
+    a_indices = []
+    a_values = [1] * len(links)
+    b_indices = []
+    b_values = [1] * len(links)
+    for i in links:
+        a_indices.append(i[0][0])
+        b_indices.append(i[0][1])
+    a_indices = [[i for i in range(len(links))], a_indices]
+    b_indices = [[i for i in range(len(links))], b_indices]
+    return a_indices, a_values, b_indices, b_values
+
+
+def sparse_tensors(i, v, links_len, adj_len):
+    i_ = torch.LongTensor(i)
+    v_ = torch.FloatTensor(v)
+    result = torch.sparse.FloatTensor(i_, v_, torch.Size([links_len, adj_len])).to_dense()
+    return result

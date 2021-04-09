@@ -9,3 +9,5 @@ use_feature = True
 
 num_epoch = 200
 learning_rate = 0.01
+
+edge_operator = 'hadamard'
