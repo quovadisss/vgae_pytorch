@@ -14,9 +14,11 @@ This repository implements variational graph auto-encoder by Thomas Kipf. For de
 * run `python train.py`
 
 # Notes
-
 * The dataset is the same as what Kipf provided in his original implementation. Thus I used his preprocessing code as-is(maybe with minor modification).
 * Per-epoch training time is a bit slower then the original implementation.(0.2 sec/epoch --> 0.9 sec/epoch)
 * Train accuracy, validation(test) average precision, auroc are similar to those of the original. (over 90% for both AP and roc) 
 * Dropout is not implemented now.
 * Feel free to report some inefficiencies in the code! (It's just initial version so may have much room for pytorch-adaptation)
+
+# Data and result
+* Patent data was used to extract latent features matrix Z
