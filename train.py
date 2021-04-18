@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 from torch.optim import Adam
-from sklearn.metrics import roc_auc_score, average_precision_score
+from sklearn.metrics import roc_auc_score, average_precision_score, f1_score
 import scipy.sparse as sp
 import numpy as np
 import pandas as pd
@@ -186,3 +186,4 @@ def node2edge(node_a, node_b, output, length, dataset):
 
 node2edge(tra, trb, Z, len(tr_links), 'tr')
 node2edge(vala, valb, Z, len(val_links), 'val')
+
